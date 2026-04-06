@@ -1,0 +1,12 @@
+event_time,source_ip,destination_ip,method,path,status_code,bytes_sent,user_agent
+2026-04-06T10:00:00Z,192.168.1.15,10.0.0.11,GET,/api/health,200,532,Mozilla/5.0
+2026-04-06T10:00:01Z,192.168.1.15,10.0.0.11,GET,/api/users,200,1512,Mozilla/5.0
+2026-04-06T10:00:03Z,45.134.22.8,10.0.0.11,GET,/wp-admin.php,404,288,curl/7.64.1
+2026-04-06T10:00:04Z,45.134.22.8,10.0.0.11,GET,/phpmyadmin,404,301,curl/7.64.1
+2026-04-06T10:00:05Z,45.134.22.8,10.0.0.11,POST,/login,401,403,sqlmap/1.7
+2026-04-06T10:00:10Z,172.16.5.7,10.0.0.11,POST,/api/orders,201,1980,Mozilla/5.0
+2026-04-06T10:00:12Z,203.0.113.55,10.0.0.11,GET,/etc/passwd,403,210,python-requests/2.31.0
+2026-04-06T10:00:15Z,203.0.113.55,10.0.0.11,GET,/api/export?format=../../../../etc/shadow,400,190,python-requests/2.31.0
+2026-04-06T10:00:20Z,192.168.1.22,10.0.0.11,GET,/api/products,200,1200,Mozilla/5.0
+2026-04-06T10:00:22Z,198.51.100.72,10.0.0.11,PUT,/api/admin/users/1,403,542,Go-http-client/1.1
+
