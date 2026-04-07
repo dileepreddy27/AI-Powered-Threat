@@ -1,122 +1,253 @@
 # Threat Shield: AI-Powered Threat Detection System
 
-Threat Shield ingests logs or web traffic, runs anomaly detection in near real-time, generates threat scores, and exposes alerts/timeline/model-comparison for a security dashboard.
+Threat Shield ingests logs/web traffic, performs anomaly detection in near real-time, stores detections, and visualizes alerts/timeline/model performance on a dashboard.
 
 ## Stack
 
-- ML service: `FastAPI` + `scikit-learn` + `PyTorch`
+- ML API: `FastAPI` + `scikit-learn` + `PyTorch`
 - Gateway: `Node.js` + `Express`
 - Dashboard: `Next.js`
-- Database: `Postgres` (Supabase-compatible schema)
-- Optional future stream layer: Kafka
+- Database: `Postgres` (works with local Postgres or Supabase)
 
-## Monorepo Layout
+## Project Layout
 
 ```text
 .
-├─ apps/
-│  └─ dashboard/              # Next.js frontend
-├─ services/
-│  ├─ gateway/                # Node.js API gateway + persistence
-│  └─ ml-api/                 # FastAPI + anomaly detection models
-├─ infra/
-│  └─ sql/init.sql            # Database schema bootstrap
-├─ samples/sample_logs.csv    # Demo input data
-├─ docker-compose.yml
-└─ README.md
+|-- apps/
+|   `-- dashboard/
+|-- services/
+|   |-- gateway/
+|   `-- ml-api/
+|-- infra/
+|   `-- sql/init.sql
+|-- samples/
+|   `-- sample_logs.csv
+|-- docker-compose.yml
+`-- README.md
 ```
 
-## Features Implemented
+## What Is Implemented
 
-- CSV or JSON log ingestion
-- Feature engineering from logs (`IP`, method, path patterns, status code, request rate)
-- Baseline anomaly models:
+- CSV/JSON log ingestion
+- Feature engineering from logs (IP/method/path/status/request-rate)
+- Models:
   - Isolation Forest
   - One-Class SVM
-- Deep anomaly model:
   - PyTorch Autoencoder
-- Threat scoring and attack type classification
-- Alerting (high/critical severity anomalies)
-- Timeline endpoint (hourly anomaly trend)
-- Model comparison endpoint
-- Dashboard for upload + monitoring
+- Threat score + attack type classification
+- Alerts (high/critical anomalies)
+- Timeline and model comparison APIs
+- Next.js dashboard for upload and monitoring
 
-## Quick Start (Docker)
+## Prerequisites
 
-1. Copy env template:
-   ```bash
-   cp .env.example .env
-   ```
-   `NEXT_PUBLIC_GATEWAY_URL` is browser-facing, while `GATEWAY_INTERNAL_URL` is used by Next.js server-side rendering.
-2. Start all services:
-   ```bash
-   docker compose up --build
-   ```
-3. Open apps:
-   - Dashboard: `http://localhost:3000`
-   - Gateway health: `http://localhost:4000/health`
-   - ML API health: `http://localhost:8000/health`
+- Docker Desktop installed and running
+- Git (optional)
+- Supabase project (optional, if you want cloud DB instead of local Postgres container)
 
-## Local Dev (without Docker)
+Verify Docker:
 
-### 1) ML API
-
-```bash
-cd services/ml-api
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```powershell
+docker --version
+docker compose version
 ```
 
-### 2) Gateway
+## Environment Setup
 
-```bash
-cd services/gateway
-npm install
-npm run dev
+From project root:
+
+```powershell
+cd "C:\Users\dilee\OneDrive\Documents\New project"
+Copy-Item .env.example .env
 ```
 
-### 3) Dashboard
+Choose one DB mode in `.env`.
 
-```bash
-cd apps/dashboard
-npm install
-npm run dev
+### Option A: Local Docker Postgres (recommended for quick local demo)
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/threat_shield
 ```
 
-### 4) Postgres
+### Option B: Supabase Pooler (recommended for cloud DB)
 
-Use local Postgres (or Supabase) and execute:
+Use your pooler host/credentials from Supabase `Settings -> Database -> Connection string`.
 
-```sql
-\i infra/sql/init.sql
+```env
+DATABASE_URL=postgresql://postgres.<project_ref>:<URL_ENCODED_PASSWORD>@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-## API Overview
+Notes:
+- Do not use your project HTTPS URL (`https://...supabase.co`) as `DATABASE_URL`.
+- URL-encode special password characters (example: `@` becomes `%40`).
+- Keep no trailing spaces on the `DATABASE_URL` line.
 
-### Gateway (`http://localhost:4000`)
+## Start Services (Docker)
 
+```powershell
+docker compose down
+docker compose up --build -d
+docker compose ps
+```
+
+## Health Checks
+
+PowerShell:
+
+```powershell
+Invoke-RestMethod http://localhost:8000/health
+Invoke-RestMethod http://localhost:4000/health
+```
+
+CMD:
+
+```cmd
+curl http://localhost:8000/health
+curl http://localhost:4000/health
+```
+
+## Schema Setup
+
+### Local Postgres container
+
+No manual action needed. Schema auto-loads from `infra/sql/init.sql`.
+
+### Supabase
+
+Run schema once in Supabase SQL Editor:
+
+1. Open `SQL Editor`
+2. Click `New query`
+3. Paste contents of `infra/sql/init.sql`
+4. Click `Run`
+
+Expected tables:
+- `raw_logs`
+- `detections`
+- `alerts`
+- `model_metrics`
+
+## Upload Sample Logs
+
+PowerShell:
+
+```powershell
+curl.exe -X POST http://localhost:4000/api/upload `
+  -F "file=@samples/sample_logs.csv" `
+  -F "modelName=isolation_forest"
+```
+
+CMD (single line):
+
+```cmd
+curl -X POST http://localhost:4000/api/upload -F "file=@samples/sample_logs.csv" -F "modelName=isolation_forest"
+```
+
+## Validate Output
+
+```powershell
+Invoke-RestMethod http://localhost:4000/api/events
+Invoke-RestMethod http://localhost:4000/api/alerts
+Invoke-RestMethod http://localhost:4000/api/timeline
+Invoke-RestMethod http://localhost:4000/api/model-comparison
+```
+
+## Open Dashboard
+
+- [http://localhost:3000](http://localhost:3000)
+
+Check from terminal:
+
+PowerShell:
+
+```powershell
+(Invoke-WebRequest http://localhost:3000).StatusCode
+```
+
+CMD:
+
+```cmd
+curl -I http://localhost:3000
+```
+
+## Common Errors and Fixes
+
+### `docker` is not recognized
+
+Install Docker Desktop, restart terminal, and verify:
+
+```powershell
+docker --version
+```
+
+### `{"message":"file is required"}` on upload
+
+You sent `POST /api/upload` without `-F "file=@..."`.
+
+### `-F is not recognized`
+
+You ran `-F ...` as a separate command line. Keep all `curl` parts in one command.
+
+### `getaddrinfo ENOTFOUND db.<...>.supabase.co`
+
+Gateway cannot resolve/reach that DB host.
+
+Fix:
+- Prefer Supabase pooler URL in `DATABASE_URL`, or
+- Temporarily switch to local DB:
+  `postgresql://postgres:postgres@postgres:5432/threat_shield`
+
+### `curl: (7) Failed to connect to localhost:3000`
+
+Dashboard is not reachable.
+
+Check:
+
+```powershell
+docker compose ps
+docker compose logs dashboard --tail=120
+docker compose down
+docker compose up --build -d
+```
+
+### `.StatusCode was unexpected at this time`
+
+You ran PowerShell syntax in CMD.
+
+Use:
+
+```cmd
+powershell -Command "(Invoke-WebRequest http://localhost:3000).StatusCode"
+```
+
+### `{"detail":"Not Found"}` on health
+
+You likely called `/healthcls` instead of `/health`.
+
+Correct endpoint:
+- `http://localhost:8000/health`
+
+## Stop or Reset
+
+Stop containers:
+
+```powershell
+docker compose down
+```
+
+Stop and remove volumes (fresh DB):
+
+```powershell
+docker compose down -v
+```
+
+## API Endpoints
+
+Gateway (`http://localhost:4000`):
 - `GET /health`
+- `GET /api/models`
+- `POST /api/train`
 - `POST /api/ingest`
-  - Body:
-    ```json
-    {
-      "modelName": "isolation_forest",
-      "events": [
-        {
-          "event_time": "2026-04-06T10:00:00Z",
-          "source_ip": "45.134.22.8",
-          "destination_ip": "10.0.0.11",
-          "method": "GET",
-          "path": "/wp-admin.php",
-          "status_code": 404,
-          "bytes_sent": 288,
-          "user_agent": "curl/7.64.1"
-        }
-      ]
-    }
-    ```
 - `POST /api/upload` (multipart file field: `file`)
 - `GET /api/events`
 - `GET /api/alerts`
@@ -124,27 +255,12 @@ Use local Postgres (or Supabase) and execute:
 - `GET /api/timeline`
 - `GET /api/model-comparison`
 
-### ML API (`http://localhost:8000`)
-
+ML API (`http://localhost:8000`):
 - `GET /health`
 - `GET /models`
 - `POST /train`
 - `POST /detect`
 
-## Demo Run
+## Security Note
 
-Upload `samples/sample_logs.csv` from the dashboard or use:
-
-```bash
-curl -X POST http://localhost:4000/api/upload \
-  -F "file=@samples/sample_logs.csv" \
-  -F "modelName=isolation_forest"
-```
-
-## Next Enhancements (Research-grade)
-
-- Kafka ingestion and stream consumers
-- Online learning updates from recent benign traffic
-- RL response policy (`allow`, `challenge`, `block`, `rate-limit`)
-- SOC workflow integrations (Slack, PagerDuty, Jira)
-- MITRE ATT&CK mapping per detected technique
+If any DB password was shared in terminal/chat history, rotate it immediately in Supabase and update `.env`.
