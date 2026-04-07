@@ -39,6 +39,48 @@ Threat Shield ingests logs/web traffic, performs anomaly detection in near real-
 - Timeline and model comparison APIs
 - Next.js dashboard for upload and monitoring
 
+## What This Project Actually Does (End-to-End)
+
+When you run this system, it performs the full detection pipeline below:
+
+1. You send logs using:
+   - `POST /api/upload` with a CSV file, or
+   - `POST /api/ingest` with JSON events.
+2. The Gateway service normalizes each log record.
+3. The Gateway forwards records to the ML API for anomaly scoring.
+4. The ML API converts logs into numerical features (time, IP traits, path patterns, status codes, request-rate behavior).
+5. The ML API runs anomaly detection models:
+   - Isolation Forest
+   - One-Class SVM
+   - PyTorch Autoencoder
+6. The ML API returns model scores, anomaly decision, threat score, attack-type label, and reason.
+7. The Gateway stores:
+   - raw log events in `raw_logs`
+   - detection outputs in `detections`
+   - high/critical incidents in `alerts`
+8. The dashboard reads API data and shows:
+   - latest detections (threat feed)
+   - generated alerts
+   - timeline trend (events vs anomalies)
+   - model comparison summary
+9. You can acknowledge alerts using `POST /api/alerts/:id/ack`.
+
+## Current Scope vs Future Scope
+
+### Current scope (already working)
+
+- Batch/near real-time log analysis via API upload
+- Threat scoring and attack categorization for suspicious requests
+- Persistent storage of detections and alerts
+- Visualization for monitoring and model comparison
+
+### Future scope (not implemented yet)
+
+- Kafka streaming ingestion
+- True online learning updates
+- Reinforcement-learning response actions (`allow/challenge/block/rate-limit`)
+- External incident integrations (Slack, PagerDuty, Jira)
+
 ## Prerequisites
 
 - Docker Desktop installed and running
